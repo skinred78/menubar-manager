@@ -63,6 +63,14 @@ final class SectionController: NSObject {
 
     // MARK: Public
 
+    /// The divider's frame in AppKit screen coordinates. Its left edge is the
+    /// boundary: items further left are in the hidden section.
+    var dividerFrame: CGRect? { dividerItem.button?.window?.frame }
+
+    /// The toggle's frame and the screen it sits on.
+    var toggleFrame: CGRect? { toggleItem.button?.window?.frame }
+    var toggleScreen: NSScreen? { toggleItem.button?.window?.screen }
+
     func toggle() {
         state == .hidden ? reveal() : hide()
     }

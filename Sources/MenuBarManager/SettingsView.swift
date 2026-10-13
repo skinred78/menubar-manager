@@ -1,11 +1,15 @@
 import AppKit
 import ServiceManagement
+import Combine
 import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var settings: Settings
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var loginError: String?
+    @State private var hasAccessibility = Permissions.hasAccessibility
+    @State private var hasScreenRecording = Permissions.hasScreenRecording
+    private let permissionTimer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
 
     var body: some View {
         Form {
@@ -17,6 +21,32 @@ struct SettingsView: View {
                     }
                 }
                 Toggle("Hide again when I switch apps", isOn: $settings.rehideOnAppSwitch)
+            }
+
+            Section("Bar below the menu bar") {
+                Picker("Show hidden icons in a bar", selection: $settings.barMode) {
+                    ForEach(Settings.BarMode.allCases) { mode in
+                        Text(mode.label).tag(mode)
+                    }
+                }
+                permissionRow(
+                    "Accessibility",
+                    detail: "Lets a click in the bar open the real icon's menu.",
+                    granted: hasAccessibility,
+                    pane: "Privacy_Accessibility",
+                    request: Permissions.requestAccessibility
+                )
+                permissionRow(
+                    "Screen Recording",
+                    detail: "Shows the real icons. Without it the bar shows app icons.",
+                    granted: hasScreenRecording,
+                    pane: "Privacy_ScreenCapture",
+                    request: Permissions.requestScreenRecording
+                )
+            }
+            .onReceive(permissionTimer) { _ in
+                hasAccessibility = Permissions.hasAccessibility
+                hasScreenRecording = Permissions.hasScreenRecording
             }
 
             Section("General") {
@@ -41,6 +71,29 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 420)
         .fixedSize()
+    }
+
+    private func permissionRow(
+        _ title: String,
+        detail: String,
+        granted: Bool,
+        pane: String,
+        request: @escaping () -> Void
+    ) -> some View {
+        LabeledContent {
+            if granted {
+                Label("Allowed", systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+            } else {
+                Button("Allow…") {
+                    request()
+                    Permissions.openPrivacySettings(pane)
+                }
+            }
+        } label: {
+            Text(title)
+            Text(detail)
+        }
     }
 
     private func setLaunchAtLogin(_ enabled: Bool) {

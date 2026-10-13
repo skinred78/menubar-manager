@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let settings = Settings.shared
     private var section: SectionController!
     private var rehide: RehideController!
+    private var notchBar: NotchBarController!
     private let settingsWindow = SettingsWindowController()
     private var editLayoutItem: NSMenuItem!
 
@@ -18,6 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         section = SectionController(dividerMenu: makeDividerMenu())
         rehide = RehideController(section: section, settings: settings)
+        notchBar = NotchBarController(section: section)
 
         section.onToggleClick = { [weak self] in self?.toggleClicked() }
         section.onStateChange = { [weak self] state in
@@ -28,7 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Give macOS a moment to place the status items before checking
             // where the divider sits.
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
-                self?.section.hide()
+                MainActor.assumeIsolated { _ = self?.section.hide() }
             }
         } else {
             settings.hasLaunchedBefore = true
@@ -42,9 +44,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Finishing an edit by clicking the arrow hides straight away.
             isEditingLayout = false
             section.hide()
+        } else if notchBar.isVisible {
+            notchBar.close()
+        } else if section.state == .hidden,
+                  let screen = screenUnderPointer,
+                  notchBar.shouldUseBar(on: screen, mode: settings.barMode) {
+            notchBar.show(on: screen)
         } else {
             section.toggle()
         }
+    }
+
+    private var screenUnderPointer: NSScreen? {
+        let mouse = NSEvent.mouseLocation
+        return NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main
     }
 
     // MARK: Divider menu
@@ -67,6 +80,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func toggleEditLayout() {
+        notchBar.close()
         if isEditingLayout {
             isEditingLayout = false
         } else {
@@ -80,6 +94,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func quit() {
+        notchBar.close()
         // Leave the bar in its normal state so nothing stays pushed off screen.
         section.reveal()
         NSApp.terminate(nil)
