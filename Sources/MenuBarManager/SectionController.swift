@@ -147,7 +147,7 @@ final class SectionController: NSObject {
                 let items = ItemScanner.allItems()
                 let leftOfDivider = items.filter { $0.frame.maxX <= divider.minX + 1 }
                 let names = leftOfDivider.map(\.displayName).joined(separator: ", ")
-                NSLog("MenuBarManager layout [%@]: requested length %.0f, divider %@, toggle %@, %d of %d items left of divider: %@",
+                NSLog("MenuBarManager layout [%@]: requested length %.0f, divider %@, toggle %@, %ld of %ld items left of divider: %@",
                       state == .hidden ? "hidden" : "revealed",
                       self.dividerItem.length,
                       NSStringFromRect(divider),
