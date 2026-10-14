@@ -1,6 +1,6 @@
 import AppKit
 
-/// Collapses the hidden section again after a delay, or when another app
+/// Hides the chosen icons again after a delay, or when another app
 /// becomes active, unless the user is still using the menu bar.
 @MainActor
 final class RehideController {
@@ -9,7 +9,7 @@ final class RehideController {
     private var timer: Timer?
     private var appObserver: NSObjectProtocol?
 
-    /// While true (Edit Layout mode), nothing rehides automatically.
+    /// While true (Settings is open), nothing rehides automatically.
     var isSuspended = false {
         didSet {
             if isSuspended { cancel() } else { schedule() }
