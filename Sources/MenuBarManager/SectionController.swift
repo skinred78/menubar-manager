@@ -75,7 +75,7 @@ final class SectionController: NSObject {
         if state == .hidden {
             reveal()
         } else {
-            hide()
+            hide(userInitiated: true)
         }
     }
 
@@ -87,11 +87,16 @@ final class SectionController: NSObject {
     }
 
     /// Hides the section. Returns false if the divider is in the wrong place.
+    /// Only a hide the user asked for explains the problem; automatic hides
+    /// (rehide timer, app switches, launch) fail quietly so they can't pop up
+    /// the same warning over and over.
     @discardableResult
-    func hide() -> Bool {
+    func hide(userInitiated: Bool = false) -> Bool {
         guard state != .hidden else { return true }
         guard dividerIsLeftOfToggle else {
-            showMisplacedDividerAlert()
+            NSLog("MenuBarManager: not hiding, divider %@ is not left of toggle %@",
+                  String(describing: dividerFrame), String(describing: toggleFrame))
+            if userInitiated { showMisplacedDividerAlert() }
             return false
         }
         state = .hidden
@@ -142,7 +147,12 @@ final class SectionController: NSObject {
         return divider.midX < toggle.midX
     }
 
+    private var isShowingAlert = false
+
     private func showMisplacedDividerAlert() {
+        guard !isShowingAlert else { return }
+        isShowingAlert = true
+        defer { isShowingAlert = false }
         let alert = NSAlert()
         alert.messageText = "The divider is on the wrong side"
         alert.informativeText = "Hold Command and drag the thin divider line so it sits to the left of the arrow icon. Icons left of the divider are the ones that get hidden."

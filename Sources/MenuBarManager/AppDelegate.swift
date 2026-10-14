@@ -43,7 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if isEditingLayout {
             // Finishing an edit by clicking the arrow hides straight away.
             isEditingLayout = false
-            section.hide()
+            section.hide(userInitiated: true)
         } else if notchBar.isVisible {
             notchBar.close()
         } else if section.state == .hidden,
