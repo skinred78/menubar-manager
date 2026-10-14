@@ -14,7 +14,12 @@ final class SectionController: NSObject {
 
     private static let toggleName = "MBMToggle"
     private static let dividerName = "MBMDivider"
-    private static let hiddenLength: CGFloat = 10_000
+    /// Wide enough to push everything to its left off the widest display.
+    /// macOS 27 may refuse absurd lengths, so stay close to real screen sizes.
+    private static var hiddenLength: CGFloat {
+        let widest = NSScreen.screens.map(\.frame.width).max() ?? 2000
+        return widest + 200
+    }
 
     let toggleItem: NSStatusItem
     let dividerItem: NSStatusItem
@@ -128,6 +133,27 @@ final class SectionController: NSObject {
             dividerItem.button?.image = nil
             dividerItem.length = Self.hiddenLength
             toggleItem.button?.image = Self.symbol("chevron.left", "Show hidden icons")
+        }
+        logLayout(after: state)
+    }
+
+    /// Writes what macOS actually did with the divider, so problems can be
+    /// read with: log show --last 5m --predicate 'process == "MenuBarManager"'
+    private func logLayout(after state: State) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                let divider = self.dividerFrame ?? .zero
+                let items = ItemScanner.allItems()
+                let leftOfDivider = items.filter { $0.frame.maxX <= divider.minX + 1 }
+                let names = leftOfDivider.map(\.displayName).joined(separator: ", ")
+                NSLog("MenuBarManager layout [%@]: requested length %.0f, divider %@, toggle %@, %d of %d items left of divider: %@",
+                      state == .hidden ? "hidden" : "revealed",
+                      self.dividerItem.length,
+                      NSStringFromRect(divider),
+                      NSStringFromRect(self.toggleFrame ?? .zero),
+                      leftOfDivider.count, items.count, names)
+            }
         }
     }
 
