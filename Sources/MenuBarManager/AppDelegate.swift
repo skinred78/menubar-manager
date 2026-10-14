@@ -119,7 +119,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Click the divider any time for Edit Layout, Settings and Quit.
         """
         alert.addButton(withTitle: "Got it")
-        NSApp.activate()
+        NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
     }
 }

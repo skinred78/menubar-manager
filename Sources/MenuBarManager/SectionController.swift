@@ -50,12 +50,9 @@ final class SectionController: NSObject {
             button.action = #selector(toggleClicked)
             button.toolTip = "Show or hide menu bar icons"
         }
-        if #available(macOS 27, *) {
-            // On macOS 27 a click on a status item without a menu starts an
-            // "expanded interface session" instead of reliably sending the
-            // button's action, so listen for that too.
-            toggleItem.expandedInterfaceDelegate = self
-        }
+        // Deliberately no expandedInterfaceDelegate: on macOS 27, setting it
+        // stops left clicks from sending the button action, and the session
+        // it opens swallows the next click, so the arrow only works once.
 
         dividerItem.button?.toolTip = "MenuBar Manager: icons left of this line are hidden"
         applyState()
@@ -111,9 +108,8 @@ final class SectionController: NSObject {
         handleToggleClick()
     }
 
-    fileprivate func handleToggleClick() {
-        // The button action and the macOS 27 session callback can both fire
-        // for one click; treat them as a single click.
+    private func handleToggleClick() {
+        // Ignore a double fire from one click.
         let now = Date()
         guard now.timeIntervalSince(lastToggleClick) > 0.3 else { return }
         lastToggleClick = now
@@ -157,7 +153,7 @@ final class SectionController: NSObject {
         alert.messageText = "The divider is on the wrong side"
         alert.informativeText = "Hold Command and drag the thin divider line so it sits to the left of the arrow icon. Icons left of the divider are the ones that get hidden."
         alert.addButton(withTitle: "OK")
-        NSApp.activate()
+        NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
     }
 
@@ -188,15 +184,4 @@ final class SectionController: NSObject {
         image.accessibilityDescription = "Divider"
         return image
     }()
-}
-
-@available(macOS 27, *)
-extension SectionController: NSStatusItemExpandedInterfaceDelegate {
-    nonisolated func statusItem(_ statusItem: NSStatusItem, didBegin session: NSStatusItemExpandedInterfaceSession) {
-        MainActor.assumeIsolated {
-            handleToggleClick()
-        }
-    }
-
-    nonisolated func statusItemDidEndExpandedInterfaceSession(_ statusItem: NSStatusItem, animated: Bool) {}
 }
