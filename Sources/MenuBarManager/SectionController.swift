@@ -72,7 +72,11 @@ final class SectionController: NSObject {
     var toggleScreen: NSScreen? { toggleItem.button?.window?.screen }
 
     func toggle() {
-        state == .hidden ? reveal() : hide()
+        if state == .hidden {
+            reveal()
+        } else {
+            hide()
+        }
     }
 
     func reveal() {
