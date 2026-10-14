@@ -96,8 +96,7 @@ final class SectionController: NSObject {
     func hide(userInitiated: Bool = false) -> Bool {
         guard state != .hidden else { return true }
         guard dividerIsLeftOfToggle else {
-            NSLog("MenuBarManager: not hiding, divider %@ is not left of toggle %@",
-                  String(describing: dividerFrame), String(describing: toggleFrame))
+            DebugLog.write("not hiding: divider \(String(describing: dividerFrame)) is not left of toggle \(String(describing: toggleFrame))")
             if userInitiated { showMisplacedDividerAlert() }
             return false
         }
@@ -118,6 +117,7 @@ final class SectionController: NSObject {
         let now = Date()
         guard now.timeIntervalSince(lastToggleClick) > 0.3 else { return }
         lastToggleClick = now
+        DebugLog.write("arrow clicked while \(state == .hidden ? "hidden" : "revealed")")
         onToggleClick?()
     }
 
@@ -147,12 +147,17 @@ final class SectionController: NSObject {
                 let items = ItemScanner.allItems()
                 let leftOfDivider = items.filter { $0.frame.maxX <= divider.minX + 1 }
                 let names = leftOfDivider.map(\.displayName).joined(separator: ", ")
-                NSLog("MenuBarManager layout [%@]: requested length %.0f, divider %@, toggle %@, %ld of %ld items left of divider: %@",
-                      state == .hidden ? "hidden" : "revealed",
-                      self.dividerItem.length,
-                      NSStringFromRect(divider),
-                      NSStringFromRect(self.toggleFrame ?? .zero),
-                      leftOfDivider.count, items.count, names)
+                DebugLog.write(String(
+                    format: "layout [%@]: requested length %.0f, divider %@, toggle %@, %ld of %ld items left of divider: %@",
+                    state == .hidden ? "hidden" : "revealed",
+                    self.dividerItem.length,
+                    NSStringFromRect(divider),
+                    NSStringFromRect(self.toggleFrame ?? .zero),
+                    leftOfDivider.count, items.count, names
+                ))
+                for item in items {
+                    DebugLog.write("  item \(item.displayName) pid \(item.pid) window \(item.windowID) frame \(NSStringFromRect(item.frame))")
+                }
             }
         }
     }

@@ -17,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        DebugLog.write("launched, macOS \(ProcessInfo.processInfo.operatingSystemVersionString), screens \(NSScreen.screens.map { NSStringFromRect($0.frame) })")
         section = SectionController(dividerMenu: makeDividerMenu())
         rehide = RehideController(section: section, settings: settings)
         notchBar = NotchBarController(section: section)
